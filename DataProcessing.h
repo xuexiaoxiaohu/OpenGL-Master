@@ -41,6 +41,7 @@ public:
 
 	//lr 
 	void getRenderData(pcl::PolygonMesh& mesh);
+	void get_Normal(QVector3D p1, QVector3D p2, QVector3D p3, double& a, double& b, double& c);
 	void getClipPlaneMesh(pcl::PolygonMesh& mesh, double a, double b, double c, QVector3D p);
 	void getClipPlane_X0Mesh(pcl::PolygonMesh& mesh,  QVector3D p);
 	void getClipPlane_X1Mesh(pcl::PolygonMesh& mesh,  QVector3D p);
@@ -52,5 +53,6 @@ public:
 	QVector<QVector3D>	worldPos;
 	void polyClip(pcl::PolygonMesh& mesh, QVector<QVector3D> worldPos);
 	void boxClip(pcl::PolygonMesh& mesh, QVector<QVector3D> worldPos, double rayStart[3]);
+	void polyLineClip(pcl::PolygonMesh& mesh, QVector<QVector3D> worldPos);
 
 };

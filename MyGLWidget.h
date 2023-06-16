@@ -48,7 +48,9 @@ protected:
     void keyReleaseEvent(QKeyEvent* event)      override;
 
     void convScreen2World(QPoint point, GLdouble& wx, GLdouble& wy, GLdouble& wz);
-
+    void convScreen2World0(QPoint point, GLdouble& wx, GLdouble& wy, GLdouble& wz);
+    void convScreen2World1(QPoint point, GLdouble& wx, GLdouble& wy, GLdouble& wz);
+    void calDepth(QPoint screenPoint, GLfloat& depth);
 private:
     pcl::PolygonMesh mesh;
     QOpenGLShaderProgram* pShader, * mShader;

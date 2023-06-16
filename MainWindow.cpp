@@ -6,9 +6,8 @@
 #include <QPixmap>
 #include <QPainter>
 #include <thread>
-MainWindow::MainWindow(QWidget *parent)
-    :QMainWindow(parent)
-    ,isRenderRunning(true)
+MainWindow::MainWindow(QWidget *parent):QMainWindow(parent)
+,isRenderRunning(true)
     ,isPlyFile(false){
 	ui.setupUi(this);
     addOpengGLWidget();
@@ -23,7 +22,7 @@ MainWindow::MainWindow(QWidget *parent)
     connect(timer, SIGNAL(timeout()), this, SLOT(updateCursor()));
     timer->start(100);
 
-    driver = new NDIDriver("COM3");
+    //driver = new NDIDriver("COM3");
     surface = new SurfaceReconsturction();
     pointProc = new DataProcessing();
     meshProc = new DataProcessing();
@@ -39,7 +38,7 @@ void MainWindow::updateCursor() {
     meshGLWidget->geometry().contains(this->mapFromGlobal(QCursor::pos())) ? meshGLWidget->isMouseBrush = true:false;
 }
 MainWindow::~MainWindow(){
-    delete driver;
+    //delete driver;
     delete surface;
     delete pointGLWidget;
     delete meshGLWidget;

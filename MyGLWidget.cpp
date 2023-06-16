@@ -194,7 +194,7 @@ void MyGLWidget::mousePressEvent(QMouseEvent* event){
     // lr
     if (isPolyClipped && event->button() == Qt::LeftButton)
     {
-        //��¼��ǰ����λ�ã�
+        
         QPoint pos = event->pos();
         m_points.append(pos);
     }
@@ -221,32 +221,23 @@ void MyGLWidget::keyPressEvent(QKeyEvent* event) {
     if (event->key() == Qt::Key_A){
         isPolyClipped = !isPolyClipped;
         if (!isPolyClipped){
-            /*vtkNew<vtkPoints> selectionPoints;
-            GLdouble wx, wy, wz;
-            for (int i = 0; i < m_points.size(); i++)
-            {
-                convScreen2World(m_points[i], wx, wy, wz);  
-                selectionPoints->InsertPoint(i, wx, wy, wz);
-            }
-            vtkSmartPointer<vtkPolyData> polydata3 = vtkSmartPointer<vtkPolyData>::New();
-            pcl::io::mesh2vtk(this->mesh, polydata3);
-            vtkSmartPointer<vtkSelectPolyData> selectPolyData = vtkSmartPointer<vtkSelectPolyData>::New();
-            selectPolyData->SetInputData(polydata3);
-            selectPolyData->SetLoop(selectionPoints);
-            selectPolyData->GenerateUnselectedOutputOn();
-            selectPolyData->Update();
-            pcl::io::vtk2mesh(selectPolyData->GetUnselectedOutput(), mesh);*/
-
-            // 
 
             GLdouble wx, wy, wz;
+            GLfloat depth;
             QVector<QVector3D>	worldPos;
             for (int i = 0; i < m_points.size(); i++)
             {
-                convScreen2World(m_points[i], wx, wy, wz);
-                worldPos.push_back(QVector3D(wx, wy, wz));
+                calDepth(m_points[i], depth);
+                if (depth != 1)
+                {
+                    //cout << "depth: " << depth << endl;
+                    convScreen2World(m_points[i], wx, wy, wz);
+                    worldPos.push_back(QVector3D(wx, wy, wz));
+                }
+                
             }
-            glDataProc->polyClip(mesh, worldPos);
+            //glDataProc->polyClip(mesh, worldPos);
+            glDataProc->polyLineClip(mesh, worldPos);
 
             //qDebug() << "after box choose  , mesh size " << this->mesh.polygons.size();
             glDataProc->getRenderData(mesh);
@@ -280,129 +271,6 @@ void MyGLWidget::keyPressEvent(QKeyEvent* event) {
             worldPos.push_back(QVector3D(wx3, wy3, wz3));
             worldPos.push_back(QVector3D(wx4, wy4, wz4));
 
-           // double p11[3] = { wx1,wy1,wz1 };
-           // double p21[3] = { wx2,wy2,wz2 };
-           // double p31[3] = { wx3,wy3,wz3 };
-           // double p41[3] = { wx4,wy4,wz4 };
-           // double* points[4] = { p11,p21,p31,p41 };
-           // 
-           // vtkSmartPointer<vtkPoints> polydataPoints = vtkSmartPointer<vtkPoints>::New();
-           // for (int i = 0; i < 4; i++)
-           // {
-           //     polydataPoints->InsertNextPoint(points[i]);
-           // }
-           // vtkSmartPointer<vtkIdList> lineIds = vtkSmartPointer<vtkIdList>::New();
-           // lineIds->SetNumberOfIds(5);
-           // lineIds->SetId(0, 0);
-           // lineIds->SetId(1, 1);
-           // lineIds->SetId(2, 2);
-           // lineIds->SetId(3, 3);
-           // lineIds->SetId(4, 0);
-           // vtkSmartPointer<vtkCellArray> lines = vtkSmartPointer<vtkCellArray>::New();
-           // lines->InsertNextCell(lineIds);
-           // vtkSmartPointer<vtkPolyData> polydata = vtkSmartPointer<vtkPolyData>::New();
-           // polydata->SetPoints(polydataPoints);
-           // polydata->SetLines(lines);
-           // double bounds[6];
-           // polydata->GetBounds(bounds);
-           // /*std::cout << "X range: " << bounds[0] << " - " << bounds[1] << std::endl;
-           // std::cout << "Y range: " << bounds[2] << " - " << bounds[3] << std::endl;
-           // std::cout << "Z range: " << bounds[4] << " - " << bounds[5] << std::endl;
-           // std::cout << "***" << std::endl;*/
-           // double xmin = bounds[0];
-           // double xmax = bounds[1];
-           // double ymin = bounds[2];
-           // double ymax = bounds[3];
-           // double zmin = bounds[4];
-           // double zmax = bounds[5];
-
-           // // 创建裁剪平面的法向量和截距
-           // double planes[24] = {
-           //     1, 0, 0, -xmin, // left
-           //     -1, 0, 0, xmax, // right
-           //     0, 1, 0, -ymin, // bottom
-           //     0, -1, 0, ymax, // top
-           //     0, 0, 1, -zmin, // near
-           //     0, 0, -1, zmax  // far
-           // };
-
-
-           // // 创建vtkPlanes对象，并将裁剪平面的参数设置给它
-           // vtkSmartPointer<vtkPlanes> clippingPlanes = vtkSmartPointer<vtkPlanes>::New();
-           // clippingPlanes->SetFrustumPlanes(planes);
-
-           // // 使用vtkFrustumSource类创建视锥体，并将裁剪平面设置给它
-           // vtkSmartPointer<vtkFrustumSource> frustumSource = vtkSmartPointer<vtkFrustumSource>::New();
-           // frustumSource->SetPlanes(clippingPlanes);
-           // frustumSource->Update();
-
-
-           // vtkPlanes* frustum = frustumSource->GetPlanes();
-
-           // //提前标记几何数据的CellId
-           // vtkIdFilter* idFilter = vtkIdFilter::New();
-           // vtkSmartPointer<vtkPolyData> polydata2 = vtkSmartPointer<vtkPolyData>::New();
-           // pcl::io::mesh2vtk(this->mesh, polydata2);
-           ///* std::cout << "初始模型点个数： " << polydata2->GetNumberOfPoints() << std::endl;
-           // std::cout << "初始模型面片个数： " << polydata2->GetNumberOfCells() << std::endl;*/
-
-           // idFilter->SetInputData(polydata2);
-           // // idFilter->SetCellIdsArrayName("OriginalCellId");
-           // idFilter->Update();
-           // //提取视锥体内的模型
-           // vtkExtractPolyDataGeometry* extract = vtkExtractPolyDataGeometry::New();
-           // extract->SetInputConnection(idFilter->GetOutputPort());
-           // extract->SetImplicitFunction(frustum);
-           // extract->Update();
-           // if (!extract->GetOutput()->GetPolys())
-           // {
-           //     std::cout << "faild!" << std::endl;
-           //     return;
-           // }
-
-
-
-           // //创建面片定位器
-           // vtkCellLocator* locator = vtkCellLocator::New();
-           // locator->SetDataSet(extract->GetOutput());
-           // locator->BuildLocator();
-           // //----------利用光线投射的方法寻找更靠近摄像机的面片------------
-
-           // double rayStart[3] = { this->camera->eye[0],this->camera->eye[1],this->camera->eye[2] };//光线起点坐标：设置为摄像机位置
-           // double rayDirection[3];			//光线方向向量：设置为框选数据包围盒的中心
-           // extract->GetOutput()->GetCenter(rayDirection);
-           // //std::cout << "center of box : " << rayDirection[0] << " " << rayDirection[1] << " " << rayDirection[2] << std::endl;
-           // //std::cout << " ray start " << rayStart[0] << " " << rayStart[1] << " " << rayStart[2] << std::endl;
-           // double xyz[3];
-           // double t;
-           // double pcoords[3];
-           // int subId;
-           // vtkIdType cellId = -1;			//记录光线击中的面片Id号
-
-
-           // locator->IntersectWithLine(rayStart, rayDirection, 0.0001, t, xyz, pcoords, subId, cellId);
-           // //-----------利用找到的面片获取相连的面
-           // vtkPolyDataConnectivityFilter* connectivity = vtkPolyDataConnectivityFilter::New();
-           // connectivity->SetInputConnection(extract->GetOutputPort());
-           // connectivity->SetExtractionModeToCellSeededRegions();
-           // connectivity->InitializeSeedList();
-           // connectivity->AddSeed(cellId);
-           // connectivity->Update();
-
-           // vtkIdTypeArray* ids = dynamic_cast<vtkIdTypeArray*>(connectivity->GetOutput()->GetCellData()->GetArray(0));
-           // polydata2->BuildLinks();
-           // if (!ids) return;
-           // 
-           // for (int i = 0; i < ids->GetNumberOfValues(); i++){
-           //     vtkIdType id = ids->GetValue(i);
-           //     polydata2->DeleteCell(id);
-           // }
-
-           // polydata2->RemoveDeletedCells();
-           // polydata2->Modified();
-
-           // pcl::io::vtk2mesh(polydata2, mesh);
-
 
             double rayStart[3] = { this->camera->eye[0],this->camera->eye[1],this->camera->eye[2] };//光线起点坐标：
             glDataProc->boxClip(mesh, worldPos, rayStart);
@@ -420,9 +288,17 @@ void MyGLWidget::keyPressEvent(QKeyEvent* event) {
         if (!idSliceClipped){
 
             QPoint p1(m_points[0].x(), m_points[0].y());
+            QPoint p2(m_points[1].x(), m_points[1].y());
             GLdouble wx1, wy1, wz1, wx2, wy2, wz2, wx3, wy3, wz3;
             convScreen2World(p1, wx1, wy1, wz1);
-            double a = 1.0, b = 0.0, c = 0.0;       
+            convScreen2World(p2, wx2, wy2, wz2);
+            convScreen2World0(p2, wx3, wy3, wz3);
+            double a = -1.0, b = 0.0, c = 0.0;
+          glDataProc->get_Normal(QVector3D((float)wx1, (float)wy1, (float)wz1),
+                QVector3D((float)wx2, (float)wy2, (float)wz2),
+                QVector3D((float)wx3, (float)wy3, (float)wz3), a,  b, c); 
+          //cout << "a " << a << " b " << b << " c " << c<<endl;
+                   
             glDataProc->getClipPlaneMesh(mesh, a, b, c, QVector3D((float)wx1, (float)wy1, (float)wz1));
             setImageData(glDataProc->glMeshData);
             repaint();
@@ -464,5 +340,57 @@ void MyGLWidget::convScreen2World(QPoint screenPoint, GLdouble& wx, GLdouble& wy
     GLfloat depth;
     makeCurrent();
     glReadPixels(screenPoint.x(), viewport[3] - screenPoint.y(), 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+    //cout << "depth: " << depth << endl;
     gluUnProject(screenPoint.x(), viewport[3] - screenPoint.y(), depth, mvArray, pArray, viewport, &wx, &wy, &wz);
+}
+
+
+void MyGLWidget::calDepth(QPoint screenPoint, GLfloat &depth) {
+    int viewport[4] = { 0, 0, SCR_WIDTH, SCR_HEIGHT };
+    double mvArray[16], pArray[16];
+
+    QMatrix4x4 mvMat = (camera->getViewMatrix()) * model;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            mvArray[i * 4 + j] = mvMat(j, i);
+            pArray[i * 4 + j] = proj(j, i);
+        }
+    }
+
+    makeCurrent();
+    glReadPixels(screenPoint.x(), viewport[3] - screenPoint.y(), 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &depth);
+}
+
+
+void MyGLWidget::convScreen2World0(QPoint screenPoint, GLdouble& wx, GLdouble& wy, GLdouble& wz) {
+    int viewport[4] = { 0, 0, SCR_WIDTH, SCR_HEIGHT };
+    double mvArray[16], pArray[16];
+
+    QMatrix4x4 mvMat = (camera->getViewMatrix()) * model;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            mvArray[i * 4 + j] = mvMat(j, i);
+            pArray[i * 4 + j] = proj(j, i);
+        }
+    }
+    GLfloat depth;
+    makeCurrent();
+    gluUnProject(screenPoint.x(), viewport[3] - screenPoint.y(), 0, mvArray, pArray, viewport, &wx, &wy, &wz);
+}
+
+
+void MyGLWidget::convScreen2World1(QPoint screenPoint, GLdouble& wx, GLdouble& wy, GLdouble& wz) {
+    int viewport[4] = { 0, 0, SCR_WIDTH, SCR_HEIGHT };
+    double mvArray[16], pArray[16];
+
+    QMatrix4x4 mvMat = (camera->getViewMatrix()) * model;
+    for (int i = 0; i < 4; i++) {
+        for (int j = 0; j < 4; j++) {
+            mvArray[i * 4 + j] = mvMat(j, i);
+            pArray[i * 4 + j] = proj(j, i);
+        }
+    }
+    GLfloat depth;
+    makeCurrent();
+    gluUnProject(screenPoint.x(), viewport[3] - screenPoint.y(), 1, mvArray, pArray, viewport, &wx, &wy, &wz);
 }

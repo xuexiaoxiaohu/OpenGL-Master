@@ -15,6 +15,8 @@
 #include <vtkCellLocator.h>
 #include <vtkPolyDataConnectivityFilter.h>
 #include <vtkCellData.h>
+#include <vtkPolyLine.h>
+#include <vtkPolyPlane.h>
 
 void DataProcessing::loadPointData(QString path) {
 	QFile file(path);
@@ -98,7 +100,7 @@ std::vector<int> DataProcessing::getIndicesFromRadiusSearch(pcl::PolygonMesh mes
 	kdtree->setInputCloud(cloud);
 	kdtree->radiusSearch(searchPoint, radius, k_indices, k_sqr_dists);
 
-	return k_indices;
+	return k_indices;// 包含了最近点的索引
 }
 void DataProcessing::eraseMesh(pcl::PolygonMesh &mesh, std::vector<int> verticesToDelete) {
 	std::vector<pcl::Vertices>& polygons = mesh.polygons;
@@ -113,7 +115,7 @@ void DataProcessing::eraseMesh(pcl::PolygonMesh &mesh, std::vector<int> vertices
 			}
 		}
 		if (isRemove) {
-			polygons.erase(polygons.begin() + i);
+			polygons.erase(polygons.begin() + i); 
 			--i;
 		}
 	}
@@ -268,6 +270,21 @@ void DataProcessing::getRenderData(pcl::PolygonMesh& mesh) {
 	}
 }
 
+
+// 已知三点坐标，求法向量
+void DataProcessing::get_Normal(QVector3D p1, QVector3D p2, QVector3D p3, double& a, double& b, double& c)
+
+{
+	//qDebug() << "before cal a: " << a;
+	a = ((p2.y() - p1.y()) * (p3.z() - p1.z()) - (p2.z() - p1.z()) * (p3.y() - p1.y()));
+	//qDebug() << "after cal a: " << a;
+	b = ((p2.z() - p1.z()) * (p3.x() - p1.x()) - (p2.x() - p1.x()) * (p3.z() - p1.z()));
+	c = ((p2.x() - p1.x()) * (p3.y() - p1.y()) - (p2.y() - p1.y()) * (p3.x() - p1.x()));
+}
+
+
+
+
 void DataProcessing::getClipPlaneMesh(pcl::PolygonMesh& mesh, double a, double b, double c, QVector3D p)
 {
 	clipPlaneMesh(mesh, a, b, c, p);
@@ -324,9 +341,7 @@ void DataProcessing::clipPlaneMesh(pcl::PolygonMesh& mesh, double a, double b, d
 	clipper->SetInputData(polydata1);
 
 	vtkSmartPointer<vtkPlane> plane = vtkSmartPointer<vtkPlane>::New();
-	// ��y0zƽ��ü�
-	/*plane->SetOrigin(0, 0, 0);
-	plane->SetNormal(1, 0, 0);*/
+
 
 	plane->SetOrigin(p.x(), p.y(), p.z());
 	plane->SetNormal(a, b, c);
@@ -334,11 +349,30 @@ void DataProcessing::clipPlaneMesh(pcl::PolygonMesh& mesh, double a, double b, d
 
 	clipper->SetClipFunction(plane);
 
-	clipper->InsideOutOn(); // �õ������ڵ�
+	clipper->InsideOutOn(); 
 	clipper->Update();
 	vtkSmartPointer<vtkPolyData> output = clipper->GetOutput();
+
+	vtkSmartPointer<vtkClipPolyData> clipper2 = vtkSmartPointer<vtkClipPolyData>::New();
+	clipper2->SetInputData(polydata1);
+
+	clipper2->SetClipFunction(plane);
+
+	clipper2->InsideOutOff();
+	clipper2->Update();
+	vtkSmartPointer<vtkPolyData> output2 = clipper2->GetOutput();
+
 	//qDebug() << "after clip , vtkouput size " << output->GetNumberOfPoints();
-	pcl::io::vtk2mesh(output, mesh);
+	if (output->GetNumberOfPoints() > output2->GetNumberOfPoints())
+	{
+		pcl::io::vtk2mesh(output, mesh);
+	}
+	else
+	{
+		pcl::io::vtk2mesh(output2, mesh);
+	}
+	
+	
 }
 
 void DataProcessing::polyClip(pcl::PolygonMesh& mesh, QVector<QVector3D> worldPos)
@@ -348,6 +382,7 @@ void DataProcessing::polyClip(pcl::PolygonMesh& mesh, QVector<QVector3D> worldPo
 	for (int i = 0; i < worldPos.size(); i++)
 	{
 		selectionPoints->InsertPoint(i, worldPos[i].x(),worldPos[i].y(),worldPos[i].z());
+		//cout << i<<" " << worldPos[i].x()<<" " << worldPos[i].y()<<" " << worldPos[i].z()<<" " << endl;
 	}
 
 	vtkSmartPointer<vtkPolyData> polydata3 = vtkSmartPointer<vtkPolyData>::New();
@@ -360,6 +395,72 @@ void DataProcessing::polyClip(pcl::PolygonMesh& mesh, QVector<QVector3D> worldPo
 	pcl::io::vtk2mesh(selectPolyData->GetUnselectedOutput(), mesh);
 
 }
+
+
+void DataProcessing::polyLineClip(pcl::PolygonMesh& mesh, QVector<QVector3D> worldPos)
+{
+	vtkSmartPointer<vtkPoints>polyline_pts = vtkSmartPointer<vtkPoints>::New();
+
+	for (int i = 0; i < worldPos.size(); i++)
+	{
+		double pt[3] = { worldPos[i].x(),worldPos[i].y(),worldPos[i].z() };
+		polyline_pts->InsertNextPoint(pt);
+	}
+	//double pt[3] = { worldPos[0].x(),worldPos[0].y(),worldPos[0].z() }; // 是为了开头结尾相接
+	//polyline_pts->InsertNextPoint(pt);
+	vtkSmartPointer<vtkPolyLine> polyline = vtkSmartPointer<vtkPolyLine>::New();
+	polyline->GetPointIds()->SetNumberOfIds(worldPos.size());
+	//polyline->GetPointIds()->SetNumberOfIds(worldPos.size()+1);
+	for (unsigned int i = 0; i < worldPos.size(); i++)
+	//for (unsigned int i = 0; i < worldPos.size()+1; i++)
+	{
+		polyline->GetPointIds()->SetId(i, i);
+	}
+	vtkSmartPointer<vtkCellArray> cells = vtkSmartPointer<vtkCellArray>::New();
+	cells->InsertNextCell(polyline);
+	vtkSmartPointer<vtkPolyData> polylineData = vtkSmartPointer<vtkPolyData>::New();
+	polylineData->SetPoints(polyline_pts);
+	polylineData->SetLines(cells);
+
+	// 沿折线进行裁剪
+
+	vtkSmartPointer<vtkPolyLine> PolyLine = vtkSmartPointer<vtkPolyLine>::New();
+	PolyLine = vtkPolyLine::SafeDownCast(polylineData->GetCell(0));
+	
+	//clip
+	vtkSmartPointer<vtkPolyPlane>polyPlane = vtkSmartPointer<vtkPolyPlane>::New();
+	polyPlane->SetPolyLine(PolyLine);
+	vtkSmartPointer<vtkPolyData> polydata4 = vtkSmartPointer<vtkPolyData>::New();
+	pcl::io::mesh2vtk(mesh, polydata4);
+
+	vtkSmartPointer<vtkClipPolyData>clipper = vtkSmartPointer<vtkClipPolyData>::New();
+	clipper->SetInputData(polydata4);
+	clipper->SetClipFunction(polyPlane);
+	/*clipper->InsideOutOn();*/
+	clipper->Update();
+
+	/*vtkSmartPointer<vtkClipPolyData>clipper2 = vtkSmartPointer<vtkClipPolyData>::New();
+	clipper2->SetInputData(polydata4);
+	clipper2->SetClipFunction(polyPlane);
+	clipper2->InsideOutOff();
+	clipper2->Update();
+
+	if (clipper->GetOutput()->GetNumberOfPoints() > clipper2->GetOutput()->GetNumberOfPoints())
+	{
+		cout << "clipper->GetOutput()->GetNumberOfPoints(): " << clipper->GetOutput()->GetNumberOfPoints() << endl;
+		pcl::io::vtk2mesh(clipper->GetOutput(), mesh);
+	}
+	else
+	{
+		cout << "clipper2->GetOutput()->GetNumberOfPoints(): " << clipper2->GetOutput()->GetNumberOfPoints() << endl;
+		pcl::io::vtk2mesh(clipper2->GetOutput(), mesh);
+	}*/
+	pcl::io::vtk2mesh(clipper->GetOutput(), mesh);
+	
+
+}
+
+
 
 void DataProcessing::boxClip(pcl::PolygonMesh& mesh, QVector<QVector3D> worldPos, double rayStart[3])
 {
@@ -473,17 +574,23 @@ void DataProcessing::boxClip(pcl::PolygonMesh& mesh, QVector<QVector3D> worldPos
 	connectivity->AddSeed(cellId);
 	connectivity->Update();
 
-	vtkIdTypeArray* ids = dynamic_cast<vtkIdTypeArray*>(connectivity->GetOutput()->GetCellData()->GetArray(0));
-	polydata2->BuildLinks();
-	if (!ids) return;
+	// 感兴趣框删除
+	//vtkIdTypeArray* ids = dynamic_cast<vtkIdTypeArray*>(connectivity->GetOutput()->GetCellData()->GetArray(0));
+	//polydata2->BuildLinks();
+	//if (!ids) return;
 
-	for (int i = 0; i < ids->GetNumberOfValues(); i++) {
-		vtkIdType id = ids->GetValue(i);
-		polydata2->DeleteCell(id);
-	}
+	//for (int i = 0; i < ids->GetNumberOfValues(); i++) {
+	//	vtkIdType id = ids->GetValue(i);
+	//	polydata2->DeleteCell(id);
+	//}
 
-	polydata2->RemoveDeletedCells();
-	polydata2->Modified();
-	pcl::io::vtk2mesh(polydata2, mesh);
+	//polydata2->RemoveDeletedCells();
+	//polydata2->Modified();
+	//pcl::io::vtk2mesh(polydata2, mesh);
+
+	//// 感兴趣框提取
+	vtkSmartPointer<vtkPolyData> polydata3 = vtkSmartPointer<vtkPolyData>::New();
+	polydata3 = connectivity->GetOutput();
+	pcl::io::vtk2mesh(polydata3, mesh);
 }
 
