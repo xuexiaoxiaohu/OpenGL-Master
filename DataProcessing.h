@@ -51,8 +51,10 @@ public:
 	void getClipPlane_Z1Mesh(pcl::PolygonMesh& mesh,  QVector3D p);
 	void clipPlaneMesh(pcl::PolygonMesh& mesh, double a, double b, double c, QVector3D p);
 	QVector<QVector3D>	worldPos;
-	void polyClip(pcl::PolygonMesh& mesh, QVector<QVector3D> worldPos);
-	void boxClip(pcl::PolygonMesh& mesh, QVector<QVector3D> worldPos, double rayStart[3]);
-	void polyLineClip(pcl::PolygonMesh& mesh, QVector<QVector3D> worldPos);
+	void polyClip(pcl::PolygonMesh& mesh, QVector<QVector3D> worldPos);//多点删除
+	void polyExtract(pcl::PolygonMesh& mesh, QVector<QVector3D> worldPos);//多点提取
+	void boxClip(pcl::PolygonMesh& mesh, QVector<QVector3D> worldPos, double rayStart[3]);//感兴趣框删除
+	void boxExtract(pcl::PolygonMesh& mesh, QVector<QVector3D> worldPos, double rayStart[3]);//感兴趣框提取
+	void polyLineClip(pcl::PolygonMesh& mesh, QVector<QVector3D> worldPos);//多点折线裁剪
 
 };

@@ -236,8 +236,9 @@ void MyGLWidget::keyPressEvent(QKeyEvent* event) {
                 }
                 
             }
-            //glDataProc->polyClip(mesh, worldPos);
-            glDataProc->polyLineClip(mesh, worldPos);
+            //glDataProc->polyClip(mesh, worldPos);//多点删除
+            glDataProc->polyExtract(mesh, worldPos);//多点提取
+            //glDataProc->polyLineClip(mesh, worldPos); 折线裁剪
 
             //qDebug() << "after box choose  , mesh size " << this->mesh.polygons.size();
             glDataProc->getRenderData(mesh);
@@ -273,7 +274,8 @@ void MyGLWidget::keyPressEvent(QKeyEvent* event) {
 
 
             double rayStart[3] = { this->camera->eye[0],this->camera->eye[1],this->camera->eye[2] };//光线起点坐标：
-            glDataProc->boxClip(mesh, worldPos, rayStart);
+            //glDataProc->boxClip(mesh, worldPos, rayStart);
+            glDataProc->boxExtract(mesh, worldPos, rayStart);
             glDataProc->getRenderData(mesh);
             setImageData(glDataProc->glMeshData);
             repaint();
